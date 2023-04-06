@@ -1,5 +1,8 @@
 import itertools
 import math
+import statsmodels.api as sm
+import numpy as np
+import matplotlib.pyplot as plt
 # Outputs: stress and compare it to critical stress
 
 def Euler(c, E, Lp):
@@ -12,10 +15,11 @@ def Gerard(kc, E, v, t, b):
     return ((math.pi**2 * kc * E) / (12*(1-v**2))) * (t/b)**2
 
 
+
 # 5 DVs. 3 Levels. n_stiff is discrete
 tskin = [0.01, 1.0, 2.0]
-tstiff = [0.01, 0.5, 1.0]
-nstiff = [3, 23, 43]
+tstiff = [0.01, 1.0, 1.0]
+nstiff = [3, 24,  40]
 hstiff = [0.01, 1.0, 2.0]
 wstiff = [0.01, 1.0, 2.0]
 
@@ -128,8 +132,8 @@ def getStress(hstiff, wstiff, tstiff, tskin, nstiff):
 
     minStress = min(colCr, plateCr)
     minLoad = min(colLoad, plateLoad)
-    return minStress, minLoad, totalMass
-
+    # return minStress, minLoad, totalMass
+    return totalMass
 
 
 
@@ -138,19 +142,42 @@ def getStress(hstiff, wstiff, tstiff, tskin, nstiff):
 
 
 
-number=1
+number = 1
 MinMass = 0
-f = open("StressOutput.txt", 'w')
-for combination in itertools.product(tskin,tstiff,nstiff,hstiff,wstiff):
-    print(number, combination)
-    number+=1
-    tskin = combination[0]
-    tstiff = combination[1]
-    nstiff = combination[2]
-    hstiff = combination[3]
-    wstiff = combination[4]
-    output = getStress(hstiff, wstiff, tstiff, tskin, nstiff)
-    
-    f.write(str(output) + "\n")
 
-f.close()
+
+array = list(itertools.product(tskin,tstiff,nstiff,hstiff,wstiff))
+# f.write(str(array))
+print(array)
+output = []
+for data in array:
+    tskin = data[0]
+    tstiff = data[1]
+    nstiff = data[2]
+    hstiff = data[3]
+    wstiff = data[4]
+
+    output.append(getStress(hstiff, wstiff, tstiff, tskin, nstiff))
+#print(output) 
+print(len(output))
+for i in output:
+    print(i)
+
+
+
+# Plotting
+# fix, ax = plt.subplots(figsize=(10, 6))
+# sm.graphics.(range(5), model.params[1:], ax=ax)
+# ax.set_title('Factor Effects Chart')
+# ax.set_xlabel('Factors')
+# ax.set_ylabel('Effects')
+# plt.show()
+# f.close()
+
+# f = open("StressOutput.txt", 'r')
+# data = np.empty([1, 1])
+# for i in range(number-1):
+
+#     np.append(data, float(f.readline()))
+
+# print(data)
