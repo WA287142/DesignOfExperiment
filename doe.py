@@ -11,12 +11,13 @@ def Johnson(c, E, Lp, y_sig):
 def Gerard(kc, E, v, t, b):
     return ((math.pi**2 * kc * E) / (12*(1-v**2))) * (t/b)**2
 
+
 # 5 DVs. 3 Levels. n_stiff is discrete
-# tskin = ["Min", "Mid", "Max"]
-# tstiff = ["Min", "Mid", "Max"]
-# nstiff = ["Min", "Mid", "Max"]
-# hstiff = ["Min", "Mid", "Max"]
-# wstiff = ["Min", "Mid", "Max"]
+tskin = [0.01, 1.0, 2.0]
+tstiff = [0.01, 0.5, 1.0]
+nstiff = [3, 23, 43]
+hstiff = [0.01, 1.0, 2.0]
+wstiff = [0.01, 1.0, 2.0]
 
 # Getting Inertias
 # hstiff = 2
@@ -25,7 +26,7 @@ def Gerard(kc, E, v, t, b):
 # tskin = .02
 # nstiff = 3
 
-def findStress(hstiff, wstiff, tstiff, tskin, nstiff):
+def getStress(hstiff, wstiff, tstiff, tskin, nstiff):
     # Given Constants
     L = 90
 
@@ -53,18 +54,18 @@ def findStress(hstiff, wstiff, tstiff, tskin, nstiff):
     print("Ixx2 = ", Ixx2)
     print("Ixx_tot = ", Ixx_tot)
 
-    yh1 = x_tot - cen_1x
-    yh2 = cen_2x - x_tot
-    Iyy1 = (tstiff*wstiff**3)/12 + A1*yh1**2
-    Iyy2 = ((hstiff-tstiff)*tstiff**3)/12 + A2*yh2**2
-    Iyy_tot = Iyy1 + Iyy2
+    # yh1 = x_tot - cen_1x
+    # yh2 = cen_2x - x_tot
+    # Iyy1 = (tstiff*wstiff**3)/12 + A1*yh1**2
+    # Iyy2 = ((hstiff-tstiff)*tstiff**3)/12 + A2*yh2**2
+    # Iyy_tot = Iyy1 + Iyy2
 
-    print("Iyy1 = ", Iyy1)
-    print("Iyy2 = ", Iyy2)
-    print("Iyy_tot = ", Iyy_tot)
+    # print("Iyy1 = ", Iyy1)
+    # print("Iyy2 = ", Iyy2)
+    # print("Iyy_tot = ", Iyy_tot)
 
     # Find Smallest Inertia
-    min_I = min(Iyy_tot, Ixx_tot)
+    min_I = Ixx_tot
 
     # Find slenderness ratio
     c = 4
@@ -114,24 +115,42 @@ def findStress(hstiff, wstiff, tstiff, tskin, nstiff):
     print("F_skin: ", Fskin)
 
     # Turn Critical Stress into Critical Load
-    # Column Stress tp load
-    colStress = colCr * Astiff
-    print("Critical Load of Stiffener: ", colStress)
+    # Column Stress to load
+    colLoad = colCr * Astiff
+    print("Critical Load of Stiffener: ", colLoad)
 
-    plateStress = plateCr * Askin
-    print("Critical Load of Plate: ", plateStress)
+    plateLoad = plateCr * Askin
+    print("Critical Load of Plate: ", plateLoad)
 
-    return colStress, plateStress
+    colMass = L * Astiff * .1
+    plateMass = L * Askin * .1
+    totalMass = colMass + plateMass
+
+    minStress = min(colCr, plateCr)
+    minLoad = min(colLoad, plateLoad)
+    return minStress, minLoad, totalMass
 
 
 
 
-findStress(hstiff, wstiff, tstiff, tskin, nstiff)
+# getStress(hstiff, wstiff, tstiff, tskin, nstiff)
 
 
 
 
-# number=1
-# for combination in itertools.product(tskin,tstiff,nstiff,hstiff,wstiff):
-#     print(number, combination)
-#     number+=1
+number=1
+MinMass = 0
+f = open("StressOutput.txt", 'w')
+for combination in itertools.product(tskin,tstiff,nstiff,hstiff,wstiff):
+    print(number, combination)
+    number+=1
+    tskin = combination[0]
+    tstiff = combination[1]
+    nstiff = combination[2]
+    hstiff = combination[3]
+    wstiff = combination[4]
+    output = getStress(hstiff, wstiff, tstiff, tskin, nstiff)
+    
+    f.write(str(output) + "\n")
+
+f.close()
