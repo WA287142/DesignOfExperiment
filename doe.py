@@ -1,8 +1,9 @@
 import itertools
 import math
-import statsmodels.api as sm
+# import statsmodels.api as sm
 import numpy as np
 import matplotlib.pyplot as plt
+import csv 
 # Outputs: stress and compare it to critical stress
 
 def Euler(c, E, Lp):
@@ -16,12 +17,13 @@ def Gerard(kc, E, v, t, b):
 
 
 
-# 5 DVs. 3 Levels. n_stiff is discrete
-tskin = [0.01, 1.0, 2.0]
-tstiff = [0.01, 1.0, 1.0]
-nstiff = [3, 24,  40]
-hstiff = [0.01, 1.0, 2.0]
-wstiff = [0.01, 1.0, 2.0]
+# 5 DVs. 3 Levels. n_stiff is discrete 
+# Bounds for DVs
+tskin = [0.05, 0.1, .15]
+tstiff = [0.05, 0.1, .15]
+nstiff = [5, 10, 15]
+hstiff = [0.05, 0.1, 0.15]  
+wstiff = [0.05, 0.1, 0.15]
 
 # Getting Inertias
 # hstiff = 2
@@ -35,7 +37,7 @@ def getStress(hstiff, wstiff, tstiff, tskin, nstiff):
     L = 90
 
     A1 = wstiff * tstiff
-    A2 = tstiff * (hstiff-tstiff)
+    A2 = abs(tstiff * (hstiff-tstiff))
 
     cen_1x = wstiff/2
     cen_1y = tstiff/2
@@ -43,6 +45,8 @@ def getStress(hstiff, wstiff, tstiff, tskin, nstiff):
     cen_2x = tstiff/2
     cen_2y = (hstiff-tstiff)/2 + tstiff
 
+    print(hstiff, wstiff, tstiff, tskin, nstiff)
+    print("Areas:", A1, A2)
     y_tot = (wstiff*tstiff * tstiff/2 + (hstiff-tstiff)*tstiff * ((hstiff-tstiff)/2 + tstiff)) / (A1 + A2)
     x_tot = (wstiff*tstiff * wstiff/2 + (hstiff-tstiff)*tstiff * (tstiff/2))/ (A1 + A2)
     print("y_tot = ", y_tot)
@@ -128,12 +132,16 @@ def getStress(hstiff, wstiff, tstiff, tskin, nstiff):
 
     colMass = L * Astiff * .1
     plateMass = L * Askin * .1
-    totalMass = colMass + plateMass
+    totalMass = colMass * nstiff + plateMass
 
-    minStress = min(colCr, plateCr)
-    minLoad = min(colLoad, plateLoad)
-    # return minStress, minLoad, totalMass
-    return totalMass
+    # Actual Stress
+    StressStiff = Fstiff / Astiff       
+    StressSkin = Fskin / Askin
+
+    
+    minStress = min(StressSkin, StressStiff)
+    
+    return totalMass, minStress
 
 
 
@@ -142,27 +150,56 @@ def getStress(hstiff, wstiff, tstiff, tskin, nstiff):
 
 
 
-number = 1
+#   number = 1
 MinMass = 0
-
-
+# Full Factorial
 array = list(itertools.product(tskin,tstiff,nstiff,hstiff,wstiff))
-# f.write(str(array))
-print(array)
-output = []
-for data in array:
-    tskin = data[0]
-    tstiff = data[1]
-    nstiff = data[2]
-    hstiff = data[3]
-    wstiff = data[4]
+with open('DV_data.csv', 'w', newline='') as f:
+    writer = csv.writer(f)
+    for i in array:
+        writer.writerow(i)
 
-    output.append(getStress(hstiff, wstiff, tstiff, tskin, nstiff))
-#print(output) 
-print(len(output))
-for i in output:
-    print(i)
+# Group Data by max and mins of each DV
+minTskin = []
+maxTskin = []
+minTstiff = []
+maxTstiff = []
+minNstiff = []
+maxNstiff = []
+minHstiff = []
+maxHstiff = []
 
+# Write to CSV file
+# f = open('massOutput.csv', 'w')
+# writer = csv.writer(f)
+with open('massOutput.csv', 'w', newline='') as f:
+    writer = csv.writer(f)
+    # Solve for stress/mass 
+    print(array)
+    output = []
+    for data in array:
+        t_skin = data[0]
+        t_stiff = data[1]
+        n_stiff = data[2]
+        h_stiff = data[3]
+        w_stiff = data[4]
+
+        datapt = getStress(h_stiff, w_stiff, t_stiff, t_skin, n_stiff)
+        if(t_skin == tskin[0]): # Min
+            minTskin.append(datapt[0])
+        else:
+            maxTskin.append(datapt[0])
+        # Output is totalMass, MaxStress
+        writer.writerow(datapt)
+        output.append(datapt)
+    #print(output) 
+    print(output)
+    for i in output:
+        print(i)
+
+
+
+f.close()
 
 
 # Plotting
